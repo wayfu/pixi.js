@@ -80,7 +80,7 @@ PIXI.Graphics = function()
     this.currentPath = {points:[]};
 
     /**
-     * WebGL lines ? TODO-Alvin
+     * Array containing some WebGL-related properties used by the WebGL renderer
      *
      * @property _webGL
      * @type Array
@@ -89,7 +89,7 @@ PIXI.Graphics = function()
     this._webGL = [];
 
     /**
-     * Whether this shape is used as a mask
+     * Whether this shape is being used as a mask
      *
      * @property isMask
      * @type isMask
@@ -105,7 +105,7 @@ PIXI.Graphics = function()
     this.bounds = null;
 
     /**
-     * the bound padding TODO-Alvin
+     * the bounds' padding used for bounds calculation
      *
      * @property bounds
      * @type Number
@@ -371,9 +371,9 @@ PIXI.Graphics.prototype._renderWebGL = function(renderSession)
         // check blend mode
         if(this.blendMode !== renderSession.spriteBatch.currentBlendMode)
         {
-            this.spriteBatch.currentBlendMode = this.blendMode;
+            renderSession.spriteBatch.currentBlendMode = this.blendMode;
             var blendModeWebGL = PIXI.blendModesWebGL[renderSession.spriteBatch.currentBlendMode];
-            this.spriteBatch.gl.blendFunc(blendModeWebGL[0], blendModeWebGL[1]);
+            renderSession.spriteBatch.gl.blendFunc(blendModeWebGL[0], blendModeWebGL[1]);
         }
      
         PIXI.WebGLGraphics.renderGraphics(this, renderSession);
@@ -422,7 +422,7 @@ PIXI.Graphics.prototype._renderCanvas = function(renderSession)
         context.globalCompositeOperation = PIXI.blendModesCanvas[renderSession.currentBlendMode];
     }
 
-    context.setTransform(transform[0], transform[3], transform[1], transform[4], transform[2], transform[5]);
+    context.setTransform(transform.a, transform.c, transform.b, transform.d, transform.tx, transform.ty);
     PIXI.CanvasGraphics.renderGraphics(this, context);
 
      // simple render children!
@@ -438,7 +438,7 @@ PIXI.Graphics.prototype._renderCanvas = function(renderSession)
  * @method getBounds
  * @return {Rectangle} the rectangular bounding area
  */
-PIXI.Graphics.prototype.getBounds = function()
+PIXI.Graphics.prototype.getBounds = function( matrix )
 {
     if(!this.bounds)this.updateBounds();
 
@@ -448,14 +448,14 @@ PIXI.Graphics.prototype.getBounds = function()
     var h0 = this.bounds.y;
     var h1 = this.bounds.height + this.bounds.y;
 
-    var worldTransform = this.worldTransform;
+    var worldTransform = matrix || this.worldTransform;
 
-    var a = worldTransform[0];
-    var b = worldTransform[3];
-    var c = worldTransform[1];
-    var d = worldTransform[4];
-    var tx = worldTransform[2];
-    var ty = worldTransform[5];
+    var a = worldTransform.a;
+    var b = worldTransform.c;
+    var c = worldTransform.b;
+    var d = worldTransform.d;
+    var tx = worldTransform.tx;
+    var ty = worldTransform.ty;
 
     var x1 = a * w1 + c * h1 + tx;
     var y1 = d * h1 + b * w1 + ty;
@@ -520,7 +520,7 @@ PIXI.Graphics.prototype.updateBounds = function()
     var minY = Infinity;
     var maxY = -Infinity;
 
-    var points, x, y;
+    var points, x, y, w, h;
 
     for (var i = 0; i < this.graphicsData.length; i++) {
         var data = this.graphicsData[i];
@@ -531,28 +531,29 @@ PIXI.Graphics.prototype.updateBounds = function()
 
         if(type === PIXI.Graphics.RECT)
         {
-            x = points.x - lineWidth/2;
-            y = points.y - lineWidth/2;
-            var width = points.width + lineWidth;
-            var height = points.height + lineWidth;
+            x = points[0] - lineWidth/2;
+            y = points[1] - lineWidth/2;
+            w = points[2] + lineWidth;
+            h = points[3] + lineWidth;
 
             minX = x < minX ? x : minX;
-            maxX = x + width > maxX ? x + width : maxX;
+            maxX = x + w > maxX ? x + w : maxX;
 
             minY = y < minY ? x : minY;
-            maxY = y + height > maxY ? y + height : maxY;
+            maxY = y + h > maxY ? y + h : maxY;
         }
         else if(type === PIXI.Graphics.CIRC || type === PIXI.Graphics.ELIP)
         {
-            x = points.x;
-            y = points.y;
-            var radius = points.radius + lineWidth/2;
+            x = points[0];
+            y = points[1];
+            w = points[2] + lineWidth/2;
+            h = points[3] + lineWidth/2;
 
-            minX = x - radius < minX ? x - radius : minX;
-            maxX = x + radius > maxX ? x + radius : maxX;
+            minX = x - w < minX ? x - w : minX;
+            maxX = x + w > maxX ? x + w : maxX;
 
-            minY = y - radius < minY ? y - radius : minY;
-            maxY = y + radius > maxY ? y + radius : maxY;
+            minY = y - h < minY ? y - h : minY;
+            maxY = y + h > maxY ? y + h : maxY;
         }
         else
         {
@@ -577,14 +578,14 @@ PIXI.Graphics.prototype.updateBounds = function()
 
 
 /**
- * Generates the cached sprite that was made using the generate TODO-Alvin
+ * Generates the cached sprite when the sprite has cacheAsBitmap = true
  *
  * @method _generateCachedSprite
  * @private
  */
 PIXI.Graphics.prototype._generateCachedSprite = function()
 {
-    var bounds = this.getBounds();
+    var bounds = this.getLocalBounds();
 
     if(!this._cachedSprite)
     {

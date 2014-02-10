@@ -165,12 +165,13 @@ PIXI.Sprite.prototype.onTextureUpdate = function()
 };
 
 /**
- * Retrieves the bounds of the sprite as a rectangle object
- *
- * @method getBounds
- * @return {Rectangle} the rectangular bounding area
- */
-PIXI.Sprite.prototype.getBounds = function()
+* Returns the framing rectangle of the sprite as a PIXI.Rectangle object
+*
+* @method getBounds
+* @param matrix {Matrix} the transformation matrix of the sprite
+* @return {Rectangle} the framing rectangle
+*/
+PIXI.Sprite.prototype.getBounds = function(matrix)
 {
 
     var width = this.texture.frame.width;
@@ -182,14 +183,14 @@ PIXI.Sprite.prototype.getBounds = function()
     var h0 = height * (1-this.anchor.y);
     var h1 = height * -this.anchor.y;
 
-    var worldTransform = this.worldTransform;
+    var worldTransform = matrix || this.worldTransform ;
 
-    var a = worldTransform[0];
-    var b = worldTransform[3];
-    var c = worldTransform[1];
-    var d = worldTransform[4];
-    var tx = worldTransform[2];
-    var ty = worldTransform[5];
+    var a = worldTransform.a;
+    var b = worldTransform.c;
+    var c = worldTransform.b;
+    var d = worldTransform.d;
+    var tx = worldTransform.tx;
+    var ty = worldTransform.ty;
 
     var x1 = a * w1 + c * h1 + tx;
     var y1 = d * h1 + b * w1 + ty;
@@ -345,7 +346,15 @@ PIXI.Sprite.prototype._renderCanvas = function(renderSession)
 
         // allow for trimming
        
-        context.setTransform(transform[0], transform[3], transform[1], transform[4], transform[2], transform[5]);
+        if (renderSession.roundPixels)
+        {
+            context.setTransform(transform.a, transform.c, transform.b, transform.d, transform.tx || 0, transform.ty || 0);
+        }
+        else
+        {
+            context.setTransform(transform.a, transform.c, transform.b, transform.d, transform.tx, transform.ty);
+        }
+
 
         //if smoothingEnabled is supported and we need to change the smoothing property for this texture
         if(renderSession.smoothProperty && renderSession.scaleMode !== this.texture.baseTexture.scaleMode) {
@@ -383,7 +392,7 @@ PIXI.Sprite.prototype._renderCanvas = function(renderSession)
 
            
 
-            if(texture.trimmed)
+            if(texture.trim)
             {
                 var trim =  texture.trim;
 
@@ -392,8 +401,8 @@ PIXI.Sprite.prototype._renderCanvas = function(renderSession)
                                frame.y,
                                frame.width,
                                frame.height,
-                               trim.x - this.anchor.x * trim.realWidth,
-                               trim.y - this.anchor.y * trim.realHeight,
+                               trim.x - this.anchor.x * trim.width,
+                               trim.y - this.anchor.y * trim.height,
                                frame.width,
                                frame.height);
             }
@@ -426,6 +435,7 @@ PIXI.Sprite.prototype._renderCanvas = function(renderSession)
         renderSession.maskManager.popMask(renderSession.context);
     }
 };
+
 
 // some helper functions..
 

@@ -14,23 +14,20 @@ PIXI.CanvasMaskManager = function()
 };
 
 /**
- * TODO-Alvin
+ * This method adds it to the current stack of masks
  *
  * @method pushMask
- * @param maskData TODO-Alvin
+ * @param maskData the maskData that will be pushed
  * @param context {Context2D} the 2d drawing method of the canvas
  */
 PIXI.CanvasMaskManager.prototype.pushMask = function(maskData, context)
 {
     context.save();
     
-    //maskData.visible = false;
-    // maskData.alpha = 0;
-    
     var cacheAlpha = maskData.alpha;
     var transform = maskData.worldTransform;
 
-    context.setTransform(transform[0], transform[3], transform[1], transform[4], transform[2], transform[5]);
+    context.setTransform(transform.a, transform.c, transform.b, transform.d, transform.tx, transform.ty);
 
     PIXI.CanvasGraphics.renderGraphicsMask(maskData, context);
 

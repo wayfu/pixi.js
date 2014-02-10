@@ -40,7 +40,7 @@ PIXI.TilingSprite = function(texture, width, height)
     this.tileScale = new PIXI.Point(1,1);
 
     /**
-     * 
+     * A point that represents the scale of the texture object
      *
      * @property tileScaleOffset
      * @type Point
@@ -55,6 +55,14 @@ PIXI.TilingSprite = function(texture, width, height)
      */
     this.tilePosition = new PIXI.Point(0,0);
 
+
+    /**
+     * Whether this sprite is renderable or not
+     *
+     * @property renderable
+     * @type Boolean
+     * @default true
+     */
     this.renderable = true;
 
     /**
@@ -77,7 +85,7 @@ PIXI.TilingSprite = function(texture, width, height)
 };
 
 // constructor
-PIXI.TilingSprite.prototype = Object.create( PIXI.Sprite.prototype );
+PIXI.TilingSprite.prototype = Object.create(PIXI.Sprite.prototype);
 PIXI.TilingSprite.prototype.constructor = PIXI.TilingSprite;
 
 
@@ -113,7 +121,7 @@ Object.defineProperty(PIXI.TilingSprite.prototype, 'height', {
 });
 
 /**
- * When the texture is updated, this event will fire to update the scale and frame
+ * When the texture is updated, this event will be fired to update the scale and frame
  *
  * @method onTextureUpdate
  * @param event
@@ -121,13 +129,16 @@ Object.defineProperty(PIXI.TilingSprite.prototype, 'height', {
  */
 PIXI.TilingSprite.prototype.onTextureUpdate = function()
 {
-    // so if _width is 0 then width was not set..
-    //console.log("HI MUM")
-   
-
     this.updateFrame = true;
 };
 
+/**
+* Renders the object using the WebGL renderer
+*
+* @method _renderWebGL
+* @param renderSession {RenderSession} 
+* @private
+*/
 PIXI.TilingSprite.prototype._renderWebGL = function(renderSession)
 {
 
@@ -179,7 +190,13 @@ PIXI.TilingSprite.prototype._renderWebGL = function(renderSession)
     }
 };
 
-
+/**
+* Renders the object using the Canvas renderer
+*
+* @method _renderCanvas
+* @param renderSession {RenderSession} 
+* @private
+*/
 PIXI.TilingSprite.prototype._renderCanvas = function(renderSession)
 {
     if(this.visible === false || this.alpha === 0)return;
@@ -198,7 +215,7 @@ PIXI.TilingSprite.prototype._renderCanvas = function(renderSession)
 
     // allow for trimming
 
-    context.setTransform(transform[0], transform[3], transform[1], transform[4], transform[2], transform[5]);
+    context.setTransform(transform.a, transform.c, transform.b, transform.d, transform.tx, transform.ty);
 
 
     if(!this.__tilePattern)
@@ -223,7 +240,10 @@ PIXI.TilingSprite.prototype._renderCanvas = function(renderSession)
 
     var tilePosition = this.tilePosition;
     var tileScale = this.tileScale;
-   // console.log(tileScale.x)
+
+    tilePosition.x %= this.tilingTexture.baseTexture.width;
+    tilePosition.y %= this.tilingTexture.baseTexture.height;
+
     // offset
     context.scale(tileScale.x,tileScale.y);
     context.translate(tilePosition.x, tilePosition.y);
@@ -242,6 +262,13 @@ PIXI.TilingSprite.prototype._renderCanvas = function(renderSession)
     }
 };
 
+
+/**
+* Returns the framing rectangle of the sprite as a PIXI.Rectangle object
+*
+* @method getBounds
+* @return {Rectangle} the framing rectangle
+*/
 PIXI.TilingSprite.prototype.getBounds = function()
 {
 
@@ -256,13 +283,13 @@ PIXI.TilingSprite.prototype.getBounds = function()
 
     var worldTransform = this.worldTransform;
 
-    var a = worldTransform[0];
-    var b = worldTransform[3];
-    var c = worldTransform[1];
-    var d = worldTransform[4];
-    var tx = worldTransform[2];
-    var ty = worldTransform[5];
-
+    var a = worldTransform.a;
+    var b = worldTransform.c;
+    var c = worldTransform.b;
+    var d = worldTransform.d;
+    var tx = worldTransform.tx;
+    var ty = worldTransform.ty;
+    
     var x1 = a * w1 + c * h1 + tx;
     var y1 = d * h1 + b * w1 + ty;
 
@@ -315,7 +342,12 @@ PIXI.TilingSprite.prototype.getBounds = function()
     return bounds;
 };
 
-
+/**
+* 
+* @method generateTilingTexture
+* 
+* @param forcePowerOfTwo {Boolean} Whether we want to force the texture to be a power of two
+*/
 PIXI.TilingSprite.prototype.generateTilingTexture = function(forcePowerOfTwo)
 {
     var texture = this.texture;

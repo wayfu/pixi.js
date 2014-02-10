@@ -15,6 +15,7 @@ PIXI.BaseTextureCacheIdGenerator = 0;
  * @uses EventTarget
  * @constructor
  * @param source {String} the source object (image or canvas)
+ * @param scaleMode {Number} Should be one of the PIXI.scaleMode consts
  */
 PIXI.BaseTexture = function(source, scaleMode)
 {
@@ -65,40 +66,28 @@ PIXI.BaseTexture = function(source, scaleMode)
 
     if(!source)return;
 
-    if(this.source instanceof Image || this.source instanceof HTMLImageElement)
-    {
-        if(this.source.complete)
-        {
-            this.hasLoaded = true;
-            this.width = this.source.width;
-            this.height = this.source.height;
-
-            PIXI.texturesToUpdate.push(this);
-        }
-        else
-        {
-
-            var scope = this;
-            this.source.onload = function() {
-
-                scope.hasLoaded = true;
-                scope.width = scope.source.width;
-                scope.height = scope.source.height;
-
-                // add it to somewhere...
-                PIXI.texturesToUpdate.push(scope);
-                scope.dispatchEvent( { type: 'loaded', content: scope } );
-            };
-            //this.image.src = imageUrl;
-        }
-    }
-    else
+    if(this.source.complete || this.source.getContext)
     {
         this.hasLoaded = true;
         this.width = this.source.width;
         this.height = this.source.height;
 
         PIXI.texturesToUpdate.push(this);
+    }
+    else
+    {
+
+        var scope = this;
+        this.source.onload = function() {
+
+            scope.hasLoaded = true;
+            scope.width = scope.source.width;
+            scope.height = scope.source.height;
+
+            // add it to somewhere...
+            PIXI.texturesToUpdate.push(scope);
+            scope.dispatchEvent( { type: 'loaded', content: scope } );
+        };
     }
 
     this.imageUrl = null;
@@ -121,10 +110,9 @@ PIXI.BaseTexture.prototype.constructor = PIXI.BaseTexture;
  */
 PIXI.BaseTexture.prototype.destroy = function()
 {
-    if(this.source instanceof Image)
+    if(this.imageUrl)
     {
-        if (this.imageUrl in PIXI.BaseTextureCache)
-            delete PIXI.BaseTextureCache[this.imageUrl];
+        delete PIXI.BaseTextureCache[this.imageUrl];
         this.imageUrl = null;
         this.source.src = null;
     }
@@ -133,11 +121,11 @@ PIXI.BaseTexture.prototype.destroy = function()
 };
 
 /**
+ * Changes the source image of the texture
  *
- *
- * @method destroy
+ * @method updateSourceImage
+ * @param newSrc {String} the path of the image
  */
-
 PIXI.BaseTexture.prototype.updateSourceImage = function(newSrc)
 {
     this.hasLoaded = false;
@@ -152,6 +140,8 @@ PIXI.BaseTexture.prototype.updateSourceImage = function(newSrc)
  * @static
  * @method fromImage
  * @param imageUrl {String} The image url of the texture
+ * @param crossorigin {Boolean} 
+ * @param scaleMode {Number} Should be one of the PIXI.scaleMode consts
  * @return BaseTexture
  */
 PIXI.BaseTexture.fromImage = function(imageUrl, crossorigin, scaleMode)

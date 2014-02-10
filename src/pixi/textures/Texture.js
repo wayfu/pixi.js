@@ -31,7 +31,7 @@ PIXI.Texture = function(baseTexture, frame)
         baseTexture = baseTexture.baseTexture;
 
     /**
-     * The base texture of this texture
+     * The base texture of that this texture uses
      *
      * @property baseTexture
      * @type BaseTexture
@@ -50,10 +50,10 @@ PIXI.Texture = function(baseTexture, frame)
      * The trim point
      *
      * @property trim
-     * @type Point
+     * @type Rectangle
      */
-    this.trim = new PIXI.Point();
-
+    this.trim = null;
+  
     this.scope = this;
 
     if(baseTexture.hasLoaded)
@@ -128,23 +128,23 @@ PIXI.Texture.prototype.setFrame = function(frame)
 
 PIXI.Texture.prototype._updateWebGLuvs = function()
 {
-    if(!this._uvs)this._uvs = new Float32Array(8);
+    if(!this._uvs)this._uvs = new PIXI.TextureUvs();
 
     var frame = this.frame;
     var tw = this.baseTexture.width;
     var th = this.baseTexture.height;
 
-    this._uvs[0] = frame.x / tw;
-    this._uvs[1] = frame.y / th;
+    this._uvs.x0 = frame.x / tw;
+    this._uvs.y0 = frame.y / th;
 
-    this._uvs[2] = (frame.x + frame.width) / tw;
-    this._uvs[3] = frame.y / th;
+    this._uvs.x1 = (frame.x + frame.width) / tw;
+    this._uvs.y1 = frame.y / th;
 
-    this._uvs[4] = (frame.x + frame.width) / tw;
-    this._uvs[5] = (frame.y + frame.height) / th;
+    this._uvs.x2 = (frame.x + frame.width) / tw;
+    this._uvs.y2 = (frame.y + frame.height) / th;
 
-    this._uvs[6] = frame.x / tw;
-    this._uvs[7] = (frame.y + frame.height) / th;
+    this._uvs.x3 = frame.x / tw;
+    this._uvs.y3 = (frame.y + frame.height) / th;
 };
 
 /**
@@ -234,3 +234,21 @@ PIXI.Texture.removeTextureFromCache = function(id)
 
 // this is more for webGL.. it contains updated frames..
 PIXI.Texture.frameUpdates = [];
+
+PIXI.TextureUvs = function()
+{
+    this.x0 = 0;
+    this.y0 = 0;
+
+    this.x1 = 0;
+    this.y1 = 0;
+
+    this.x2 = 0;
+    this.y2 = 0;
+
+    this.x3 = 0;
+    this.y4 = 0;
+
+
+};
+

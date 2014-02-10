@@ -39,14 +39,38 @@ PIXI.InteractionManager = function(stage)
 
     // helpers
     this.tempPoint = new PIXI.Point();
-    //this.tempMatrix =  mat3.create();
 
+    /**
+     * 
+     * @property mouseoverEnabled
+     * @type Boolean
+     * @default
+     */
     this.mouseoverEnabled = true;
 
-    //tiny little interactiveData pool!
+    /**
+     * tiny little interactiveData pool !
+     * 
+     * @property pool
+     * @type Array
+     */
     this.pool = [];
 
+    /**
+     * An array containing all the iterative items from the our interactive tree
+     * @property interactiveItems
+     * @type Array
+     * @private
+     *
+     */
     this.interactiveItems = [];
+
+    /**
+     * Our canvas
+     * @property interactionDOMElement
+     * @type HTMLCanvasElement
+     * @private
+     */
     this.interactionDOMElement = null;
 
     //this will make it so that you dont have to call bind all the time
@@ -58,7 +82,24 @@ PIXI.InteractionManager = function(stage)
     this.onTouchStart = this.onTouchStart.bind(this);
     this.onTouchEnd = this.onTouchEnd.bind(this);
     this.onTouchMove = this.onTouchMove.bind(this);
+
     this.last = 0;
+
+    /**
+     * The css style of the cursor that is being used
+     * @property currentCursorStyle
+     * @type String
+     * 
+     */
+    this.currentCursorStyle = 'inherit';
+
+    /**
+     * Is set to true when the mouse is moved out of the canvas
+     * @property mouseOut
+     * @type Boolean
+     * 
+     */
+    this.mouseOut = false;
 };
 
 // constructor
@@ -69,7 +110,7 @@ PIXI.InteractionManager.prototype.constructor = PIXI.InteractionManager;
  *
  * @method collectInteractiveSprite
  * @param displayObject {DisplayObject} the displayObject to collect
- * @param iParent {DisplayObject}
+ * @param iParent {DisplayObject} the display object's parent
  * @private
  */
 PIXI.InteractionManager.prototype.collectInteractiveSprite = function(displayObject, iParent)
@@ -77,12 +118,11 @@ PIXI.InteractionManager.prototype.collectInteractiveSprite = function(displayObj
     var children = displayObject.children;
     var length = children.length;
 
-    /// make an interaction tree... {item.__interactiveParent}
+    // make an interaction tree... {item.__interactiveParent}
     for (var i = length-1; i >= 0; i--)
     {
         var child = children[i];
 
-//      if(child.visible) {
         // push all interactive bits
         if(child.interactive)
         {
@@ -104,7 +144,7 @@ PIXI.InteractionManager.prototype.collectInteractiveSprite = function(displayObj
                 this.collectInteractiveSprite(child, iParent);
             }
         }
-//      }
+
     }
 };
 
@@ -140,7 +180,6 @@ PIXI.InteractionManager.prototype.setTarget = function(target)
  */
 PIXI.InteractionManager.prototype.setTargetDomElement = function(domElement)
 {
-    //remove previouse listeners
 
     this.removeEvents();
 
@@ -206,7 +245,6 @@ PIXI.InteractionManager.prototype.update = function()
     diff = (diff * PIXI.INTERACTION_FREQUENCY ) / 1000;
     if(diff < 1)return;
     this.last = now;
-    //
 
     var i = 0;
 
@@ -233,16 +271,14 @@ PIXI.InteractionManager.prototype.update = function()
     // loop through interactive objects!
     var length = this.interactiveItems.length;
 
-    this.interactionDOMElement.style.cursor = 'inherit';
+    
 
+    var cursor = 'inherit';
     var over = false;
 
     for (i = 0; i < length; i++)
     {
         var item = this.interactiveItems[i];
-
-
-        //if(!item.visible)continue;
 
         // OPTIMISATION - only calculate every time if the mousemove function exists..
         // OK so.. does the object have any other interactive functions?
@@ -256,7 +292,7 @@ PIXI.InteractionManager.prototype.update = function()
         // looks like there was a hit!
         if(item.__hit && !over)
         {
-            if(item.buttonMode) this.interactionDOMElement.style.cursor = item.defaultCursor;
+            if(item.buttonMode) cursor = item.defaultCursor;
 
             if(!item.interactiveChildren)over = true;
 
@@ -265,13 +301,7 @@ PIXI.InteractionManager.prototype.update = function()
 
                 if(item.mouseover)item.mouseover(this.mouse);
                 item.__isOver = true;
-
-                // just the one!
-                //break;
-                
-
             }
-            //break;
         }
         else
         {
@@ -282,9 +312,14 @@ PIXI.InteractionManager.prototype.update = function()
                 item.__isOver = false;
             }
         }
-     //   }
-        // --->
     }
+
+    if( this.currentCursorStyle !== cursor )
+    {
+        this.currentCursorStyle = cursor;
+        this.interactionDOMElement.style.cursor = cursor;
+    }
+
 };
 
 /**
@@ -363,7 +398,7 @@ PIXI.InteractionManager.prototype.onMouseDown = function(event)
 /**
  * Is called when the mouse button is moved out of the renderer element
  *
- * @method onMouseDown
+ * @method onMouseOut
  * @param event {Event} The DOM event of a mouse button being moved out
  * @private 
  */
@@ -376,7 +411,6 @@ PIXI.InteractionManager.prototype.onMouseOut = function()
     for (var i = 0; i < length; i++)
     {
         var item = this.interactiveItems[i];
-
         if(item.__isOver)
         {
             this.mouse.target = item;
@@ -384,6 +418,12 @@ PIXI.InteractionManager.prototype.onMouseOut = function()
             item.__isOver = false;
         }
     }
+
+    this.mouseOut = true;
+
+    // move the mouse to an impossible position
+    this.mouse.global.x = -10000;
+    this.mouse.global.y = -10000;
 };
 
 /**
@@ -405,8 +445,6 @@ PIXI.InteractionManager.prototype.onMouseUp = function(event)
     {
         var item = this.interactiveItems[i];
 
-        //if(item.mouseup || item.mouseupoutside || item.click)
-        //{
         item.__hit = this.hitTest(item, this.mouse);
 
         if(item.__hit && !up)
@@ -454,8 +492,8 @@ PIXI.InteractionManager.prototype.hitTest = function(item, interactionData)
    
     var isSprite = (item instanceof PIXI.Sprite),
         worldTransform = item.worldTransform,
-        a00 = worldTransform[0], a01 = worldTransform[1], a02 = worldTransform[2],
-        a10 = worldTransform[3], a11 = worldTransform[4], a12 = worldTransform[5],
+        a00 = worldTransform.a, a01 = worldTransform.b, a02 = worldTransform.tx,
+        a10 = worldTransform.c, a11 = worldTransform.d, a12 = worldTransform.ty,
         id = 1 / (a00 * a11 + a01 * -a10),
         x = a11 * id * global.x + -a01 * id * global.y + (a12 * a01 - a02 * a11) * id,
         y = a00 * id * global.y + -a10 * id * global.x + (-a12 * a00 + a02 * a10) * id;
