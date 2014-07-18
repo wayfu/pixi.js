@@ -7,8 +7,8 @@
  *
  * @class Circle
  * @constructor
- * @param x {Number} The X coordinate of the upper-left corner of the framing rectangle of this circle
- * @param y {Number} The Y coordinate of the upper-left corner of the framing rectangle of this circle
+ * @param x {Number} The X coordinate of the center of this circle
+ * @param y {Number} The Y coordinate of the center of this circle
  * @param radius {Number} The radius of the circle
  */
 PIXI.Circle = function(x, y, radius)
@@ -67,6 +67,17 @@ PIXI.Circle.prototype.contains = function(x, y)
     dy *= dy;
 
     return (dx + dy <= r2);
+};
+
+/**
+* Returns the framing rectangle of the circle as a PIXI.Rectangle object
+*
+* @method getBounds
+* @return {Rectangle} the framing rectangle
+*/
+PIXI.Circle.prototype.getBounds = function()
+{
+    return new PIXI.Rectangle(this.x - this.radius, this.y - this.radius, this.width, this.height);
 };
 
 // constructor

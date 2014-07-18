@@ -9,6 +9,8 @@
 */
 PIXI.PixiShader = function(gl)
 {
+    this._UID = PIXI._UID++;
+    
     /**
      * @property gl
      * @type WebGLContext
@@ -33,7 +35,6 @@ PIXI.PixiShader = function(gl)
         '}'
     ];
 
-
     /**
     * @property {number} textureCount - A local texture counter for multi-texture shaders.
     */
@@ -51,7 +52,6 @@ PIXI.PixiShader = function(gl)
 */
 PIXI.PixiShader.prototype.init = function()
 {
-
     var gl = this.gl;
 
     var program = PIXI.compileProgram(gl, this.vertexSrc || PIXI.PixiShader.defaultVertexSrc, this.fragmentSrc);
@@ -185,7 +185,7 @@ PIXI.PixiShader.prototype.initSampler2D = function(uniform)
     var gl = this.gl;
 
     gl.activeTexture(gl['TEXTURE' + this.textureCount]);
-    gl.bindTexture(gl.TEXTURE_2D, uniform.value.baseTexture._glTexture);
+    gl.bindTexture(gl.TEXTURE_2D, uniform.value.baseTexture._glTextures[gl.id]);
 
     //  Extended texture data
     if (uniform.textureData)
@@ -259,7 +259,6 @@ PIXI.PixiShader.prototype.syncUniforms = function()
     //  This would probably be faster in an array and it would guarantee key order
     for (var key in this.uniforms)
     {
-
         uniform = this.uniforms[key];
 
         if (uniform.glValueLength === 1)
@@ -306,7 +305,6 @@ PIXI.PixiShader.prototype.syncUniforms = function()
 /**
 * Destroys the shader
 * @method destroy
-*
 */
 PIXI.PixiShader.prototype.destroy = function()
 {
@@ -318,7 +316,7 @@ PIXI.PixiShader.prototype.destroy = function()
 };
 
 /**
-*
+* The Default Vertex shader source
 * @property defaultVertexSrc
 * @type String
 */
@@ -342,7 +340,3 @@ PIXI.PixiShader.defaultVertexSrc = [
     '   vColor = vec4(color * aColor.x, aColor.x);',
     '}'
 ];
-
-
-
-

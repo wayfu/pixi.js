@@ -49,6 +49,7 @@ PIXI.AssetLoader = function(assetURLs, crossorigin)
         'jpeg': PIXI.ImageLoader,
         'png':  PIXI.ImageLoader,
         'gif':  PIXI.ImageLoader,
+        'webp': PIXI.ImageLoader,
         'json': PIXI.JsonLoader,
         'atlas': PIXI.AtlasLoader,
         'anim': PIXI.SpineLoader,
@@ -113,7 +114,7 @@ PIXI.AssetLoader.prototype.load = function()
     var scope = this;
 
     function onLoad(evt) {
-        scope.onAssetLoaded(evt.loader);
+        scope.onAssetLoaded(evt.content);
     }
 
     this.loadCount = this.assetURLs.length;
