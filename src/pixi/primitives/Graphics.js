@@ -1089,7 +1089,7 @@ PIXI.Graphics.prototype.drawShape = function(shape)
     
     if(data.type === PIXI.Graphics.POLY)
     {
-        data.shape.closed = this.filling;
+        data.shape.closed = data.shape.closed || this.filling;
         this.currentPath = data;
     }
 
